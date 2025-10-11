@@ -26,15 +26,7 @@ extern PZEM004Tv30 pzem;
 
 // Raw sensor data struct
 struct SensorData {
-  // ZMPT101B Voltage Sensor (commented out - replaced by PZEM)
-  // int zmptRaw;
-  // float voltage;              // Calculated voltage
-  // bool zmptActive;
 
-  // SCT013 Current Sensor (commented out - replaced by PZEM)
-  // int sctRaw;
-  // float current;              // Calculated current
-  // bool sctActive;
 
   // PZEM-004T Power Meter
   float pzemVoltage;          // Voltage (V)
@@ -56,8 +48,7 @@ struct SensorData {
   float dhtTemperature;       // Celsius
   float dhtHumidity;          // Percent
 
-  // IR Proximity Sensor
-  bool irDetected;            // IR obstacle detected
+  // IR Proximity Sensor removed as requested
 
   // RCWL-0516 Microwave Radar Sensor
   bool rcwlMotion;            // RCWL-0516 motion detected
@@ -69,13 +60,21 @@ struct SensorData {
   bool humOutOfRange;         // humidity outside HUM_LOW..HUM_HIGH
 };
 
-// System data struct  
+// System data struct
 struct SystemData {
   unsigned long uptime;
   uint32_t freeHeap;
   uint32_t totalHeap;
   int cpuFreq;
-  
+
+  // SD Card information
+  bool sdCardPresent;      // SD card detected
+  uint64_t sdCardSize;     // SD card size in bytes
+  uint64_t sdCardUsed;     // SD card used space in bytes
+  uint64_t sdCardFree;     // SD card free space in bytes
+  float sdCardUsagePercent; // SD card usage percentage
+  String sdCardType;       // SD card type (SDHC, SDXC, etc.)
+
   // ADD NEW SYSTEM FIELDS BELOW:
   // Example: float cpuTemp;
   // Example: int wifiReconnects;
@@ -111,7 +110,7 @@ public:
 
     // Version and timestamp
     doc["version"] = "1.2";
-    doc["ts"] = "2025-09-22T14:20:15Z"; // TODO: Use actual timestamp
+    doc["ts"] = time(nullptr); // Real Unix timestamp from NTP (GMT+7 Asia/Jakarta)
     doc["seq"] = 141463; // TODO: Increment sequence number
     doc["tenant"] = "hospital-abc";
 
@@ -128,10 +127,7 @@ public:
     location["lng"] = 106.8;
     location["alt_m"] = 45;
 
-    JsonArray tags = device["tags"].to<JsonArray>();
-    tags.add("demo");
-    tags.add("multisensor");
-    tags.add("realistic-sim");
+    device["tags"] = "demo,multisensor,realistic-sim";
 
     // Network information
     JsonObject network = doc["network"].to<JsonObject>();
@@ -152,7 +148,7 @@ public:
     resources["uptime_s"] = system.uptime;
     resources["cpu_pct"] = 14.2; // TODO: Calculate actual CPU usage
     resources["mem_pct"] = (float)(system.totalHeap - system.freeHeap) / system.totalHeap * 100.0;
-    resources["fs_used_pct"] = 68.5; // TODO: Calculate actual flash usage
+    resources["fs_used_pct"] = system.sdCardUsagePercent;
     resources["heap_free_kb"] = system.freeHeap / 1024;
     resources["flash_free_kb"] = 980; // TODO: Calculate actual flash free
     resources["temp_c"] = 41.8; // TODO: Add CPU temperature sensor
@@ -183,9 +179,10 @@ public:
     JsonObject pzemQuality = pzem["quality"].to<JsonObject>();
     pzemQuality["status"] = sensor.pzemActive ? "ok" : "error";
     pzemQuality["calibrated"] = true;
-    JsonArray pzemErrors = pzemQuality["errors"].to<JsonArray>();
     if (!sensor.pzemActive) {
-      pzemErrors.add("communication_failed");
+      pzemQuality["errors"] = "communication_failed";
+    } else {
+      pzemQuality["errors"] = ""; // empty string if no errors
     }
     pzemQuality["notes"] = "PZEM-004T power meter dengan split CT untuk monitoring listrik komprehensif.";
 
@@ -202,7 +199,7 @@ public:
     JsonObject pirQuality = pir["quality"].to<JsonObject>();
     pirQuality["status"] = "ok";
     pirQuality["calibrated"] = true;
-    JsonArray pirErrors = pirQuality["errors"].to<JsonArray>();
+    pirQuality["errors"] = ""; // no errors
     pirQuality["notes"] = "Sensor gerak PIR HC-SR501 untuk deteksi kehadiran.";
 
     // DHT22 Temperature & Humidity Sensor
@@ -220,27 +217,14 @@ public:
     bool dhtValid = !isnan(sensor.dhtTemperature) && !isnan(sensor.dhtHumidity);
     dhtQuality["status"] = dhtValid ? "ok" : "error";
     dhtQuality["calibrated"] = true;
-    JsonArray dhtErrors = dhtQuality["errors"].to<JsonArray>();
     if (!dhtValid) {
-      dhtErrors.add("sensor_read_failed");
+      dhtQuality["errors"] = "sensor_read_failed";
+    } else {
+      dhtQuality["errors"] = ""; // empty string if no errors
     }
     dhtQuality["notes"] = "Sensor DHT22 untuk monitoring suhu dan kelembapan ruangan.";
 
-    // IR Proximity Sensor
-    JsonObject ir = dataArray.add<JsonObject>();
-    ir["sensor"] = "ir-proximity";
-    ir["category"] = "proximity";
-    ir["iface"] = "digital";
-    ir["unit_system"] = "SI";
-
-    JsonObject irObs = ir["observations"].to<JsonObject>();
-    irObs["obstacle_detected"] = sensor.irDetected;
-
-    JsonObject irQuality = ir["quality"].to<JsonObject>();
-    irQuality["status"] = "ok";
-    irQuality["calibrated"] = true;
-    JsonArray irErrors = irQuality["errors"].to<JsonArray>();
-    irQuality["notes"] = "Sensor IR proximity untuk deteksi obstacle/hambatan.";
+    // IR Proximity Sensor removed as requested
 
     // RCWL-0516 Microwave Radar Sensor
     JsonObject rcwl = dataArray.add<JsonObject>();
@@ -255,8 +239,33 @@ public:
     JsonObject rcwlQuality = rcwl["quality"].to<JsonObject>();
     rcwlQuality["status"] = "ok";
     rcwlQuality["calibrated"] = true;
-    JsonArray rcwlErrors = rcwlQuality["errors"].to<JsonArray>();
+    rcwlQuality["errors"] = ""; // no errors
     rcwlQuality["notes"] = "Sensor radar gelombang mikro RCWL-0516 untuk deteksi gerakan.";
+
+    // SD Card Module Monitor
+    JsonObject sdcard = dataArray.add<JsonObject>();
+    sdcard["sensor"] = "sd-card-module";
+    sdcard["category"] = "storage";
+    sdcard["iface"] = "spi";
+    sdcard["unit_system"] = "SI";
+
+    JsonObject sdcardObs = sdcard["observations"].to<JsonObject>();
+    sdcardObs["card_present"] = system.sdCardPresent;
+    sdcardObs["card_size_mb"] = system.sdCardSize;
+    sdcardObs["card_used_mb"] = system.sdCardUsed;
+    sdcardObs["card_free_mb"] = system.sdCardFree;
+    sdcardObs["card_usage_pct"] = system.sdCardUsagePercent;
+    sdcardObs["card_type"] = system.sdCardType;
+
+    JsonObject sdcardQuality = sdcard["quality"].to<JsonObject>();
+    sdcardQuality["status"] = system.sdCardPresent ? "ok" : "error";
+    sdcardQuality["calibrated"] = true;
+    if (!system.sdCardPresent) {
+      sdcardQuality["errors"] = "card_not_detected";
+    } else {
+      sdcardQuality["errors"] = ""; // no errors
+    }
+    sdcardQuality["notes"] = "SD card module monitoring dengan informasi kapasitas dan status kartu.";
 
     String output;
     serializeJson(doc, output);
@@ -288,6 +297,20 @@ SensorData readSensors() {
   data.pzemFrequency = pzem.frequency();
   data.pzemPowerFactor = pzem.pf();
 
+  // Debug PZEM readings
+  static int pzemDebugCount = 0;
+  pzemDebugCount++;
+  if (pzemDebugCount % 50 == 0) { // Debug every 50 readings (~2.5 seconds)
+    Serial.print("PZEM Raw: V=");
+    Serial.print(data.pzemVoltage);
+    Serial.print(" I=");
+    Serial.print(data.pzemCurrent);
+    Serial.print(" P=");
+    Serial.print(data.pzemPower);
+    Serial.print(" -> Active: ");
+    Serial.println(data.pzemActive ? "YES" : "NO");
+  }
+
   // Check if PZEM communication is successful (voltage > 0 indicates valid reading)
   data.pzemActive = (data.pzemVoltage > 0 && !isnan(data.pzemVoltage));
   if (!data.pzemActive) {
@@ -305,69 +328,7 @@ SensorData readSensors() {
     data.currentOverlimit = false;
   }
 
-  //-------------------------------------------------------------------------
-  // ZMPT101B (Voltage Sensor) Reading - COMMENTED OUT
-  //-------------------------------------------------------------------------
-  /*
-  long zmptSum = 0;
-  int zmptMax = 0, zmptMin = 4095;
 
-  for(int i = 0; i < SAMPLES; i++) {
-    int reading = analogRead(ZMPT101B_PIN);
-    zmptSum += reading;
-
-    // Track min/max for AC signal detection
-    if(reading > zmptMax) zmptMax = reading;
-    if(reading < zmptMin) zmptMin = reading;
-
-    delay(1);
-  }
-
-  data.zmptRaw = zmptSum / SAMPLES;
-
-  // Calculate RMS voltage (simplified)
-  int zmptPeakToPeak = zmptMax - zmptMin;
-  float zmptVoltage = (zmptPeakToPeak / ADC_RESOLUTION) * ADC_REF_VOLTAGE;
-  data.voltage = zmptVoltage * VOLTAGE_CALIBRATION / 2.0; // Convert to RMS
-
-  // Check if sensor is active (has AC signal variation)
-  data.zmptActive = (zmptPeakToPeak > ZMPT_THRESHOLD);
-
-  // Threshold check voltage
-  data.voltageOutOfRange = (data.voltage < VOLT_MIN || data.voltage > VOLT_MAX);
-  */
-
-  //-------------------------------------------------------------------------
-  // SCT013 (Current Sensor) Reading - COMMENTED OUT
-  //-------------------------------------------------------------------------
-  /*
-  long sctSum = 0;
-  int sctMax = 0, sctMin = 4095;
-
-  for(int i = 0; i < SAMPLES; i++) {
-    int reading = analogRead(SCT013_PIN);
-    sctSum += reading;
-
-    // Track min/max for AC signal detection
-    if(reading > sctMax) sctMax = reading;
-    if(reading < sctMin) sctMin = reading;
-
-    delay(1);
-  }
-
-  data.sctRaw = sctSum / SAMPLES;
-
-  // Calculate RMS current (simplified)
-  int sctPeakToPeak = sctMax - sctMin;
-  float sctVoltage = (sctPeakToPeak / ADC_RESOLUTION) * ADC_REF_VOLTAGE;
-  data.current = sctVoltage * CURRENT_CALIBRATION / 2.0; // Convert to RMS
-
-  // Check if sensor is active (has AC signal variation)
-  data.sctActive = (sctPeakToPeak > SCT_THRESHOLD);
-
-  // Threshold check current
-  data.currentOverlimit = (data.current > CURRENT_MAX);
-  */
   
   //-------------------------------------------------------------------------
   // ADD NEW SENSOR READINGS BELOW:
@@ -384,6 +345,18 @@ SensorData readSensors() {
     delay(5); // Small delay between readings
   }
   data.pirMotion = (pirReadings >= 2); // Majority vote: at least 2 out of 3 readings must be active
+
+  // Debug PIR sensor
+  static int pirDebugCount = 0;
+  pirDebugCount++;
+  if (pirDebugCount % 50 == 0) { // Debug every 50 readings (~2.5 seconds)
+    Serial.print("PIR Pin ");
+    Serial.print(PIR_PIN);
+    Serial.print(": ");
+    Serial.print(digitalRead(PIR_PIN));
+    Serial.print(" -> Motion: ");
+    Serial.println(data.pirMotion ? "YES" : "NO");
+  }
 
   digitalWrite(LED_PIN, data.pirMotion ? LED_ACTIVE_STATE : !LED_ACTIVE_STATE);
 
@@ -413,16 +386,7 @@ SensorData readSensors() {
     data.humOutOfRange = false;
   }
 
-  // IR Proximity Sensor (digital input) with debouncing
-  pinMode(IR_PIN, INPUT);
-
-  // Simple debouncing - read multiple times and use majority
-  int irReadings = 0;
-  for(int i = 0; i < 5; i++) {
-    if(digitalRead(IR_PIN) == LOW) irReadings++;
-    delay(10); // Small delay between readings
-  }
-  data.irDetected = (irReadings >= 3); // Majority vote: at least 3 out of 5 readings must be LOW
+  // IR Proximity Sensor removed as requested
 
   // RCWL-0516 Microwave Radar Sensor (digital input) with false trigger prevention
   pinMode(RCWL0516_PIN, INPUT);
@@ -436,6 +400,18 @@ SensorData readSensors() {
   }
   data.rcwlMotion = (rcwlReadings >= 2); // Majority vote: at least 2 out of 3 readings must be HIGH
 
+  // Debug RCWL sensor
+  static int rcwlDebugCount = 0;
+  rcwlDebugCount++;
+  if (rcwlDebugCount % 50 == 0) { // Debug every 50 readings (~2.5 seconds)
+    Serial.print("RCWL Pin ");
+    Serial.print(RCWL0516_PIN);
+    Serial.print(": ");
+    Serial.print(digitalRead(RCWL0516_PIN));
+    Serial.print(" -> Motion: ");
+    Serial.println(data.rcwlMotion ? "YES" : "NO");
+  }
+
   digitalWrite(RCWL_LED_PIN, data.rcwlMotion ? LED_ACTIVE_STATE : !LED_ACTIVE_STATE);
 
   return data;
@@ -447,6 +423,37 @@ SystemData getSystemData() {
   data.freeHeap = ESP.getFreeHeap();
   data.totalHeap = ESP.getHeapSize();
   data.cpuFreq = ESP.getCpuFreqMHz();
+
+  // SD Card information
+  if (SD.begin(SD_CS_PIN)) {
+    data.sdCardPresent = true;
+    data.sdCardSize = SD.cardSize() / (1024 * 1024); // Size in MB
+    data.sdCardUsed = (SD.cardSize() - SD.totalBytes()) / (1024 * 1024); // Used in MB
+    data.sdCardFree = SD.totalBytes() / (1024 * 1024); // Free in MB
+    data.sdCardUsagePercent = (float)(SD.cardSize() - SD.totalBytes()) / SD.cardSize() * 100.0;
+
+    // Determine SD card type
+    uint8_t cardType = SD.cardType();
+    if (cardType == CARD_MMC) {
+      data.sdCardType = "MMC";
+    } else if (cardType == CARD_SD) {
+      data.sdCardType = "SD";
+    } else if (cardType == CARD_SDHC) {
+      data.sdCardType = "SDHC";
+    } else if (cardType == CARD_UNKNOWN) {
+      data.sdCardType = "UNKNOWN";
+    } else {
+      data.sdCardType = "NONE";
+    }
+  } else {
+    data.sdCardPresent = false;
+    data.sdCardSize = 0;
+    data.sdCardUsed = 0;
+    data.sdCardFree = 0;
+    data.sdCardUsagePercent = 0.0;
+    data.sdCardType = "NOT_DETECTED";
+  }
+
   return data;
 }
 

@@ -48,6 +48,7 @@ public:
     Serial.print(F("P: ")); Serial.print(sensor.pzemPower, 1); Serial.print(F("W  "));
     Serial.print(F("E: ")); Serial.print(sensor.pzemEnergy, 3); Serial.println(F("kWh"));
     Serial.print(F("PIR: ")); Serial.print(sensor.pirMotion ? "MOTION" : "IDLE");
+    Serial.print(F("  RCWL: ")); Serial.print(sensor.rcwlMotion ? "MOTION" : "IDLE");
     Serial.println();
     Serial.print(F("T: "));
     if (!isnan(sensor.dhtTemperature)) Serial.print(sensor.dhtTemperature, 1); else Serial.print("-");
@@ -55,7 +56,13 @@ public:
     if (!isnan(sensor.dhtHumidity)) Serial.print(sensor.dhtHumidity, 0); else Serial.print("-");
     Serial.println(F("%"));
     Serial.print(F("WiFi: ")); Serial.print(wifi.status); Serial.print(F("  RSSI: ")); Serial.println(wifi.rssi);
-    Serial.print(F("Uptime: ")); Serial.print(system.uptime); Serial.print(F("s  RAM: ")); Serial.print(system.freeHeap / 1024); Serial.println(F("KB"));
+    Serial.print(F("Uptime: ")); Serial.print(system.uptime); Serial.print(F("s  "));
+    Serial.print(F("SD: ")); Serial.print(system.sdCardPresent ? "OK" : "ERR");
+    if (system.sdCardPresent) {
+      Serial.print(F(" (")); Serial.print(system.sdCardFree); Serial.print(F("MB free, "));
+      Serial.print((int)system.sdCardUsagePercent); Serial.print(F("% used)"));
+    }
+    Serial.println();
     Serial.println(F("======================"));
   }
 };
@@ -87,7 +94,7 @@ public:
     return true;
   }
   
-  void update(SensorData sensor, SystemData system, WiFiData wifi, bool httpOK) {
+  void update(SensorData sensor, SystemData system, WiFiData wifi, bool httpOK, bool sdOK) {
     display.clearDisplay();
     display.setCursor(0, 0);
 
@@ -95,9 +102,10 @@ public:
     // Header with status
     //-------------------------------------------------------------------------
     display.print("ESP32 Monitor");
-    display.setCursor(100, 0);
+    display.setCursor(85, 0);
     display.print(wifi.status == "connected" ? "W" : "X");
     display.print(httpOK ? "H" : "X");
+    display.print(sdOK ? "S" : "X");
 
     //-------------------------------------------------------------------------
     // Power readings
@@ -122,29 +130,36 @@ public:
     display.print("PIR:");
     display.print(sensor.pirMotion ? "YES" : "NO");
     display.setCursor(50, 27);
-    display.print("IR:");
-    display.print(sensor.irDetected ? "YES" : "NO");
+    display.print("RCWL:");
+    display.print(sensor.rcwlMotion ? "YES" : "NO");
+
+    //-------------------------------------------------------------------------
+    // SD Card info
+    //-------------------------------------------------------------------------
+    display.setCursor(0, 36);
+    if (system.sdCardPresent) {
+      display.printf("SD:%d%% FREE:%dMB", (int)system.sdCardUsagePercent, (int)system.sdCardFree);
+    } else {
+      display.print("SD:NOT DETECTED");
+    }
 
     //-------------------------------------------------------------------------
     // System info
     //-------------------------------------------------------------------------
-    display.setCursor(0, 36);
-    display.printf("RAM:%dKB Up:%ds", system.freeHeap / 1024, system.uptime);
+    display.setCursor(0, 45);
+    display.printf("MEM:%dKB Up:%ds", system.freeHeap / 1024, system.uptime);
 
     //-------------------------------------------------------------------------
     // Status indicators
     //-------------------------------------------------------------------------
-    display.setCursor(0, 45);
-    display.print("PWR:");
-    display.print(sensor.pzemActive ? "OK" : "ERR");
-
     display.setCursor(0, 54);
     if (sensor.voltageOutOfRange || sensor.currentOverlimit) {
       display.print("ALERT: ");
       if (sensor.voltageOutOfRange) display.print("V ");
       if (sensor.currentOverlimit) display.print("I ");
     } else {
-      display.print("STATUS: NORMAL");
+      display.print("PWR:");
+      display.print(sensor.pzemActive ? "OK" : "ERR");
     }
 
     display.display();
@@ -159,11 +174,34 @@ public:
     display.println("Starting...");
     display.display();
   }
+
+  void showError(const char* errorMessage) {
+    display.clearDisplay();
+    display.setCursor(0, 10);
+    display.setTextSize(2);
+    display.println("ERROR");
+    display.setTextSize(1);
+    display.setCursor(0, 40);
+    display.println(errorMessage);
+    display.display();
+  }
 };
 
 // Global debug function implementations
 void debugPrintln(const char* message) {
   DebugHandler::println(message);
+}
+
+void debugPrint(const char* message) {
+  if (DEBUG_ENABLED && Serial) {
+    Serial.print(message);
+  }
+}
+
+void debugWrite(uint8_t data) {
+  if (DEBUG_ENABLED && Serial) {
+    Serial.write(data);
+  }
 }
 
 #endif

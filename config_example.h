@@ -6,79 +6,75 @@
 
 // WiFi Configuration - EDIT THESE VALUES
 #ifndef WIFI_SSID
-#define WIFI_SSID "your_ssid"  // Change to your WiFi SSID
+#define WIFI_SSID "your_Wifi_ssid"  // Change to your WiFi SSID
 #endif
 
 #ifndef WIFI_PASSWORD
-#define WIFI_PASSWORD "pass"  // Change to your WiFi password
+#define WIFI_PASSWORD "your_Wifi_pass"  // Change to your WiFi password
 #endif
 
 // API Configuration - EDIT THESE VALUES
 // Production API (commented out)
 // #ifndef API_ENDPOINT
-// #define API_ENDPOINT "endpoint"
+// #define API_ENDPOINT "your_production_endpoint"
 // #endif
 // #ifndef API_KEY
-// #define API_KEY "api_key"
+// #define API_KEY "your_production_api_key"
 // #endif
 
 // Development API (no security)
 #ifndef API_ENDPOINT
-#define API_ENDPOINT "endpoint"
+#define API_ENDPOINT "your_DEV_endpoint"
 #endif
 #ifndef DEVICE_ID
-#define DEVICE_ID "esp32-5d671568"
+#define DEVICE_ID "Your_Device_ID"
 #endif
 
-// Hardware Configuration
-#ifndef PIN_VOLT
-#define PIN_VOLT 35
-#endif
-
-#ifndef PIN_CURR
-#define PIN_CURR 34
-#endif
-
-#ifndef SENSITIVITY
-#define SENSITIVITY 500.0
-#endif
-
-// PIR Sensor Pin (HC-SR501)
+// PIR Sensor Pin (HC-SR501) - GPIO 25
 #ifndef PIR_PIN
-#define PIR_PIN 23
+#define PIR_PIN 25
 #endif
 
-// DHT22 Sensor Pin
+// DHT22 Sensor Pin - Default GPIO 4
 #ifndef DHT22_PIN
 #define DHT22_PIN 4
 #endif
 
-// IR Sensor Pin (IR proximity sensor)
-#ifndef IR_PIN
-#define IR_PIN 25
-#endif
+// IR Sensor removed as requested
 
-// IR Sensor LED Pin
-#ifndef IR_LED_PIN
-#define IR_LED_PIN 19
-#endif
-
-// RCWL-0516 Microwave Radar Sensor Pin
+// RCWL-0516 Microwave Radar Sensor Pin - Default GPIO 26
 #ifndef RCWL0516_PIN
 #define RCWL0516_PIN 26
 #endif
 
-// RCWL-0516 LED Pin
+// RCWL-0516 LED Pin - GPIO 27
 #ifndef RCWL_LED_PIN
-#define RCWL_LED_PIN 18
+#define RCWL_LED_PIN 27
 #endif
 
-// PZEM-004T Serial Pins (swapped to fix communication)
+// PZEM-004T Serial Pins - Default UART2 (GPIO 16/17)
 #ifndef PZEM_RX_PIN
-#define PZEM_RX_PIN 17
+#define PZEM_RX_PIN 16
 #endif
 #ifndef PZEM_TX_PIN
-#define PZEM_TX_PIN 16
+#define PZEM_TX_PIN 17
+#endif
+
+// SD Card Configuration - Alternative SPI pins to avoid conflicts
+#ifndef SD_CS_PIN
+#define SD_CS_PIN 5   // SPI CS
+#endif
+
+#ifndef SD_SCK_PIN
+#define SD_SCK_PIN 18  // SPI SCK
+#endif
+
+#ifndef SD_MOSI_PIN
+#define SD_MOSI_PIN 23  // SPI MOSI
+#endif
+
+#ifndef SD_MISO_PIN
+#define SD_MISO_PIN 19  // SPI MISO
 #endif
 
 // Calibration Defaults
@@ -137,7 +133,7 @@
 
 // Tambahkan definisi LED indikator PIR
 #ifndef LED_PIN
-#define LED_PIN 5// GPIO2 biasanya ada LED onboard ESP32
+#define LED_PIN 14 // GPIO14 for onboard LED indicator
 #endif
 #ifndef LED_ACTIVE_STATE
 #define LED_ACTIVE_STATE HIGH // LED aktif HIGH
@@ -172,37 +168,6 @@
 #define SAMPLES 100          // Number of samples for sensor reading
 #endif
 
-// ZMPT101B (Voltage sensor) settings
-#ifndef ZMPT101B_PIN
-#define ZMPT101B_PIN 35
-#endif
-#ifndef VOLTAGE_CALIBRATION
-#define VOLTAGE_CALIBRATION 250.0
-#endif
-#ifndef ZMPT_THRESHOLD
-#define ZMPT_THRESHOLD 10
-#endif
 
-// SCT013 (Current sensor) settings
-#ifndef SCT013_PIN
-#define SCT013_PIN 34
-#endif
-#ifndef CURRENT_CALIBRATION
-#define CURRENT_CALIBRATION 30.0
-#endif
-#ifndef SCT_THRESHOLD
-#define SCT_THRESHOLD 5
-#endif
-
-// System constants
-#ifndef ADC_REF_VOLTAGE
-#define ADC_REF_VOLTAGE 3.3
-#endif
-#ifndef ADC_RESOLUTION
-#define ADC_RESOLUTION 4095.0
-#endif
-#ifndef DC_OFFSET
-#define DC_OFFSET 1.65
-#endif
 
 #endif //
