@@ -557,40 +557,6 @@ We welcome contributions to improve this IoT monitoring system! Please follow th
 - **Describe expected vs actual behavior**
 - **Include sensor connection details**
 
-## 📋 Changelog
-
-### Version 1.4.0 (Current)
-- **Enhanced README**: Comprehensive documentation with wiring diagrams and troubleshooting
-- **Code Cleanup**: Removed unused ZMPT/SCT sensor code and deprecated functions
-- **Improved Stability**: Better error handling and auto-recovery mechanisms
-- **Documentation**: Added detailed SD card logging and data interpretation guides
-
-### Version 1.3.0
-- **FreeRTOS Optimization**: Improved task scheduling and core utilization
-- **SD Card Logging**: Added comprehensive CSV logging for all sensor data
-- **Offline Buffering**: Automatic data queuing when internet unavailable
-- **Dual Motion Detection**: Added RCWL-0516 radar sensor alongside PIR
-- **Health Monitoring**: System resource monitoring and diagnostics
-
-### Version 1.2.0
-- **Multi-sensor Integration**: PZEM-004T power meter, PIR motion, DHT22 environment
-- **HTTP API Integration**: Structured JSON payloads with comprehensive metadata
-- **OLED Display**: Real-time sensor status and system information
-- **WiFi Auto-reconnect**: Robust connectivity management
-- **Dual API Support**: Development and production environment configurations
-
-### Version 1.1.0
-- **FreeRTOS Implementation**: Dual-core task management
-- **Sensor Abstraction**: Modular sensor handling system
-- **JSON Payload**: Structured data format for API transmission
-- **Basic Error Handling**: Sensor communication validation
-
-### Version 1.0.0
-- **Initial Release**: Basic ESP32 sensor monitoring
-- **Single Sensor Support**: DHT22 temperature/humidity
-- **Serial Debugging**: Basic monitoring output
-- **WiFi Connectivity**: Fundamental network integration
-
 ## 📈 Performance Metrics
 
 ### System Performance
@@ -665,11 +631,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Open Source Community**: Code reviews and contributions
 - **Academic Research**: Sensor fusion and data analysis techniques
 
----
-
-**Project**: ESP32 Multi-Sensor IoT Monitor  
-**Version**: 1.4.0  
-**Last Updated**: October 8, 2025  
-**ESP32 Core**: Arduino ESP32 v3.2.1  
-**FreeRTOS**: v10.4.3  
-**Maintainer**: IoT Development Team
